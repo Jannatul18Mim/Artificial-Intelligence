@@ -1,0 +1,56 @@
+import random,math
+
+def dot(a,b):
+    return sum(x*y for x,y in zip(a,b))
+
+def linear_regression(X,y,w):
+    d=len(X[0])
+    A=[[0.0]*d for _ in range(d)]
+    b=[0.0]*d
+    for i in range(len(X)):
+        wi=w[i]
+        for j in range(d):
+            b[j]+=wi*y[i]*X[i][j]
+            for k in range(d):
+                A[j][k]+=wi*X[i][j]*X[i][k]
+    for j in range(d):
+        A[j].append(b[j])
+    for i in range(d):
+        piv=i
+        for r in range(i+1,d):
+            if abs(A[r][i])>abs(A[piv][i]):
+                piv=r
+        A[i],A[piv]=A[piv],A[i]
+        if abs(A[i][i])<1e-12:
+            continue
+        fac=A[i][i]
+        for c in range(i,d+1):
+            A[i][c]/=fac
+        for r in range(d):
+            if r==i:
+                continue
+            fac=A[r][i]
+            for c in range(i,d+1):
+                A[r][c]-=fac*A[i][c]
+    return [A[j][d] for j in range(d)]
+
+def explain(model,x,num_samples=500,sigma=0.1):
+    d=len(x)
+    X=[]
+    y=[]
+    w=[]
+    for _ in range(num_samples):
+        z=[xi+random.gauss(0,sigma) for xi in x]
+        p=model(z)
+        X.append([zj - xi for zj,xi in zip(z,x)])
+        y.append(p)
+        dist=math.sqrt(sum((zj-xi)*(zj-xi) for zj,xi in zip(z,x)))
+        w.append(math.exp(-dist*dist/(2*sigma*sigma)))
+    beta=linear_regression(X,y,w)
+    return beta
+
+if __name__=="__main__":
+    def model(z):
+        return 1.0 if z[0]+2*z[1]>0 else 0.0
+    x=[0.1,-0.2]
+    print(explain(model,x))
