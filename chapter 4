@@ -1,0 +1,122 @@
+import random,math
+
+def simulated_annealing(f,neighbors,init,max_steps,t0,alpha):
+    x=init()
+    fx=f(x)
+    T=t0
+    for _ in range(max_steps):
+        nbr=list(neighbors(x))
+        if not nbr:
+            break
+        y=random.choice(nbr)
+        fy=f(y)
+        if fy<fx or random.random()<math.exp(-(fy-fx)/max(T,1e-9)):
+            x=y
+            fx=fy
+        T=T*alpha
+        if T<1e-12:
+            break
+    return x,fx
+
+if __name__=="__main__":
+    def f(x): return (x-3)*(x-3)
+    def neighbors(x): return [x-1,x+1]
+    init=lambda: random.randint(-50,50)
+    print(simulated_annealing(f,neighbors,init,1000,1.0,0.995))
+
+
+import random
+
+def local_beam_search(f,neighbors,init,k,max_steps):
+    states=[init() for _ in range(k)]
+    values=[f(s) for s in states]
+    for _ in range(max_steps):
+        pairs=list(zip(values,states))
+        pairs.sort()
+        bestv=pairs[0][0]
+        new_states=[]
+        for _,s in pairs[:k]:
+            for y in neighbors(s):
+                new_states.append(y)
+        if not new_states:
+            break
+        values=[f(s) for s in new_states]
+        pairs=list(zip(values,new_states))
+        pairs.sort()
+        states=[s for _,s in pairs[:k]]
+        values=[v for v,_ in pairs[:k]]
+        if values[0]>=bestv:
+            break
+    return states[0],values[0]
+
+if __name__=="__main__":
+    def f(x): return (x-3)*(x-3)
+    def neighbors(x): return [x-1,x+1]
+    init=lambda: random.randint(-50,50)
+    print(local_beam_search(f,neighbors,init,3,100))
+
+*/hill climbing*/
+
+import random
+
+def hill_climb(f,neighbor,init,max_steps):
+    x=init()
+    fx=f(x)
+    for _ in range(max_steps):
+        best=fx
+        bestx=x
+        for n in neighbor(x):
+            fn=f(n)
+            if fn<best:
+                best=fn
+                bestx=n
+        if best<fx:
+            x=bestx
+            fx=best
+        else:
+            break
+    return x,fx
+
+if __name__=="__main__":
+    def f(x): return (x-3)*(x-3)+1
+    def neighbor(x): return [x-1,x+1]
+    init=lambda: random.randint(-10,10)
+    print(hill_climb(f,neighbor,init,50))
+
+*/Random restart*/
+
+import random
+
+def hill_climb(f,neighbors,init,max_steps):
+    x=init()
+    fx=f(x)
+    for _ in range(max_steps):
+        best=fx
+        bestx=x
+        for y in neighbors(x):
+            fy=f(y)
+            if fy<best:
+                best=fy
+                bestx=y
+        if best<fx:
+            x=bestx
+            fx=best
+        else:
+            break
+    return x,fx
+
+def random_restart(f,neighbors,init,max_steps,restarts):
+    bestx=None
+    bestv=None
+    for _ in range(restarts):
+        x,v=hill_climb(f,neighbors,init,max_steps)
+        if bestv is None or v<bestv:
+            bestv=v
+            bestx=x
+    return bestx,bestv
+
+if __name__=="__main__":
+    def f(x): return (x-3)*(x-3)
+    def neighbors(x): return [x-1,x+1]
+    init=lambda: random.randint(-50,50)
+    print(random_restart(f,neighbors,init,50,20))
