@@ -1,0 +1,79 @@
+# Naive Bayes Classifier Implementation with Detailed Posterior Calculation
+dataset = [
+    ['Sunny', 'Hot', 'High', False, 'No'],
+    ['Sunny', 'Hot', 'High', True, 'No'],
+    ['Overcast', 'Hot', 'High', False, 'Yes'],
+    ['Rain', 'Mild', 'High', False, 'Yes'],
+    ['Rain', 'Cool', 'Normal', False, 'Yes'],
+    ['Rain', 'Cool', 'Normal', True, 'No'],
+    ['Overcast', 'Cool', 'Normal', True, 'Yes'],
+    ['Sunny', 'Mild', 'High', False, 'No'],
+    ['Sunny', 'Cool', 'Normal', False, 'Yes'],
+    ['Rain', 'Mild', 'Normal', False, 'Yes'],
+    ['Sunny', 'Mild', 'Normal', True, 'Yes'],
+    ['Overcast', 'Mild', 'High', True, 'Yes'],
+    ['Overcast', 'Hot', 'Normal', False, 'Yes'],
+    ['Rain', 'Mild', 'High', True, 'No']
+]
+
+
+feature_names = ['Outlook', 'Temp', 'Humidity', 'Windy']
+
+
+def train_naive_bayes(data, feature_names):
+    label_counts = {}
+    feature_counts = {}
+
+    for row in data:
+        features = row[:-1]
+        label = row[-1]
+
+  
+        label_counts[label] = label_counts.get(label, 0) + 1
+
+        # Init dicts for label
+        if label not in feature_counts:
+            feature_counts[label] = {f: {} for f in feature_names}
+
+        for i, feature in enumerate(feature_names):
+            value = features[i]
+            feature_counts[label][feature][value] = feature_counts[label][feature].get(value, 0) + 1
+
+    return label_counts, feature_counts
+
+
+
+def predict_naive_bayes(x, label_counts, feature_counts):
+    total = sum(label_counts.values())
+    probs = {}
+
+    print("\n--- Posterior Calculation ---")
+    for label in label_counts:
+        prior = label_counts[label] / total
+        probs[label] = prior
+        print(f"\nClass = {label}")
+        print(f"Prior P({label}) = {label_counts[label]}/{total} = {prior:.4f}")
+
+        for i, feature in enumerate(feature_names):
+            value = x[i]
+            feature_value_count = feature_counts[label][feature].get(value, 0)
+            unique_values = len(feature_counts[label][feature])
+            smoothed_prob = (feature_value_count + 1) / (label_counts[label] + unique_values)
+
+            probs[label] *= smoothed_prob
+            print(f"P({feature}={value} | {label}) = ({feature_value_count}+1)/({label_counts[label]}+{unique_values}) = {smoothed_prob:.4f}")
+
+        print(f"Posterior (unnormalized) for {label}: {probs[label]:.6f}")
+
+    prediction = max(probs, key=probs.get)
+    print("\nPredicted Class:", prediction)
+    return prediction
+
+
+
+label_counts, feature_counts = train_naive_bayes(dataset, feature_names)
+
+
+test_sample = ['Sunny', 'Cool', 'High', True]  
+print("Test Sample:", test_sample)
+predict_naive_bayes(test_sample, label_counts, feature_counts)
