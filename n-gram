@@ -1,0 +1,45 @@
+import random
+class NGram:
+    def __init__(self,n):
+        self.n=n
+        self.counts={}
+        self.context_counts={}
+    def train(self,tokens):
+        pad=['<s>']*(self.n-1)
+        seq=pad+tokens+['</s>']
+        for i in range(self.n-1,len(seq)):
+            ctx=tuple(seq[i-self.n+1:i])
+            tok=seq[i]
+            self.counts[(ctx,tok)]=self.counts.get((ctx,tok),0)+1
+            self.context_counts[ctx]=self.context_counts.get(ctx,0)+1
+    def prob(self,ctx,tok):
+        ctx=tuple(ctx)
+        return (self.counts.get((ctx,tok),0)+1)/(self.context_counts.get(ctx,0)+len({t for (_,t) in self.counts.keys()}))
+    def generate(self,max_len=20):
+        ctx=['<s>']*(self.n-1)
+        out=[]
+        for _ in range(max_len):
+            ctuple=tuple(ctx)
+            vocab=list({t for (c,t) in self.counts.keys() if c==ctuple})
+            if not vocab:
+                break
+            weights=[self.prob(ctx,v) for v in vocab]
+            s=sum(weights)
+            r=random.random()*s
+            acc=0
+            pick=vocab[-1]
+            for v,w in zip(vocab,weights):
+                acc+=w
+                if acc>=r:
+                    pick=v
+                    break
+            if pick=='</s>':
+                break
+            out.append(pick)
+            ctx=ctx[1:]+[pick]
+        return out
+if __name__=="__main__":
+    text="the cat sat on the mat the cat saw a rat".split()
+    lm=NGram(2)
+    lm.train(text)
+    print(lm.generate())
